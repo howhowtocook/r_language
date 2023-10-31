@@ -1,0 +1,275 @@
+      
+```{r set up, include = FALSE}
+knitr::opts_chunk$set(warning = FALSE, comment = NA)
+library(knitr)
+```
+### 一、load date
+data is come from uci website
+```{r}
+forestfires <- read.table(file = "C:/Users/91333/Documents/semiester5/R course/hw3/forestfires.csv", header = T, sep = ",")
+```
+### 二、draw bar chart
+
+#### 1.preparation
+
+##### 1)generate a new feature: iffire
+
+generate a new feature based on if area>0 ：iffire
+
+```{r}
+forestfires$iffire <- factor(ifelse(forestfires$area > 0, 1, 0), labels = c("unfired", "fired"))
+```
+
+##### 2)add level to factor type data
+
+after adding level, plot will generate in the order of lever by default, it is more convinent
+
+```{r}
+forestfires$month <- factor(forestfires$month, levels = c("jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"))
+forestfires$day <- factor(forestfires$day, levels = c("mon","tue","wed","thu","fri","sat","sun"))
+```
+
+##### 3) generate a new feature that referring season
+
+Portugal is located in the northern hemisphere.
+Although it has a relatively special Mediterranean climate, it does not affect the seasonal division, 
+because the seasons are determined by the revolution of the sun and the northern and southern hemispheres, 
+that is, March to May is spring, June to August is summer, and September to November is autumn. December to February is winter.
+
+```{r}
+forestfires$season <- ifelse(forestfires$month=="mar"|forestfires$month=="apr"|forestfires$month=="may","spring",forestfires$month)
+
+forestfires$season <- ifelse(forestfires$month=="jun"|forestfires$month=="jul"|forestfires$month=="aug","summer",forestfires$season)
+
+forestfires$season <- ifelse(forestfires$month=="sep"|forestfires$month=="oct"|forestfires$month=="nov","autumn",forestfires$season)
+
+forestfires$season <- ifelse(forestfires$month=="dec"|forestfires$month=="jan"|forestfires$month=="feb","winter",forestfires$season)
+
+forestfires$season <- factor(forestfires$season, levels = c("spring","summer","autumn","winter"))
+```
+
+#### 2.Draw plots of the number of fires, probability of fire and total area of ​​fire by month
+
+Since the number of records in each month is different, the number of fires and non-fires and the probability of fires and non-fires are plotted at the same time.
+```{r}
+library(ggplot2)
+layer1 <- ggplot(forestfires, aes(x = month, fill = iffire)) 
+geom1 <- geom_bar(position = "dodge") 
+geom2 <- geom_bar(position = "fill")
+layer1 + geom1
+layer1 + geom2
+```
+```{r}
+ggplot(forestfires, aes(x = month, y = area)) + geom_bar(stat = "sum") 
+```
+
+According to the plot above, the month with the highest number of fires is September。
+
+#### 3.Draw plots of the number of fires, probability of fire and total area of ​​fire by season
+
+```{r}
+layer2 <- ggplot(forestfires, aes(x = season, fill = iffire)) 
+layer2 + geom1
+layer2 + geom2
+```
+
+```{r}
+ggplot(forestfires, aes(x = season, y = area)) + geom_bar(stat = "sum") 
+
+According to the plot above, the season with the highest number of fires is Summer。
+
+#### 3.Draw fire frequency and fire probability maps by day
+
+```{r}
+layer3 <- ggplot(forestfires, aes(x = day, fill = iffire)) 
+layer3 + geom1
+layer3 + geom2
+```
+
+```{r}
+ggplot(forestfires, aes(x = day, y = area)) + geom_bar(stat = "sum") 
+```
+According to the plot above, the day with the highest number of fires is Sunday。
+
+### 三、Regression analyse
+
+#### 1. draw scatter matrix plot
+
+在所有可绘制散点图的变量中，在scatterplotMatrix函数中加入第12列的变量rain，程序会报错，所以在此先不加入变量rain
+
+```{r}
+library(car)
+scatterplotMatrix(forestfires[forestfires$season=="summer",c(5:11,13)])
+```
+![在这里插入图片描述](https://img-blog.csdnimg.cn/2020042310380329.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NTUyOTgzNw==,size_16,color_FFFFFF,t_70)
+
+由于上面的散点图矩阵，看得不是很清楚，所以在下面额外绘制不限定季节地各变量对area的散点图。
+
+```{r}
+ggplot(data = forestfires[forestfires$season=="summer",], aes(x = FFMC, y = area)) + geom_point() + geom_smooth()
+ggplot(data = forestfires[forestfires$season=="summer",], aes(x = DMC, y = area)) + geom_point() + geom_smooth()
+ggplot(data = forestfires[forestfires$season=="summer",], aes(x = DC, y = area)) + geom_point() + geom_smooth()
+ggplot(data = forestfires[forestfires$season=="summer",], aes(x = ISI, y = area)) + geom_point() + geom_smooth()
+ggplot(data = forestfires[forestfires$season=="summer",], aes(x = temp, y = area)) + geom_point() + geom_smooth()
+ggplot(data = forestfires[forestfires$season=="summer",], aes(x = RH, y = area)) + geom_point() + geom_smooth()
+ggplot(data = forestfires[forestfires$season=="summer",], aes(x = wind, y = area)) + geom_point() + geom_smooth()
+```
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200423103927738.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NTUyOTgzNw==,size_16,color_FFFFFF,t_70)![在这里插入图片描述](https://img-blog.csdnimg.cn/20200423104015305.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NTUyOTgzNw==,size_16,color_FFFFFF,t_70)
+#### 2.进行回归分析
+
+```{r}
+fit1 <- lm(area~.,data = forestfires[forestfires$season == "summer",-c(14,15)])
+summary(fit1)
+
+Call: lm(formula = area ~ ., data = forestfires[forestfires$season ==      "summer", -c(14, 15)]) 
+ 
+Residuals:
+    Min     1Q Median     3Q    Max  
+    -54.46 -17.47  -7.39   4.11 692.73  
+ 
+Coefficients: 
+             Estimate Std. Error t value Pr(>|t|) 
+(Intercept)  12.03337  122.29075   0.098    0.922 
+X             2.75870    2.02710   1.361    0.175 
+Y            -0.17898    3.77028  -0.047    0.962 
+monthjul     20.97120   20.30659   1.033    0.303 
+monthaug     28.20861   24.86823   1.134    0.258 
+daytue       -3.99845   16.53124  -0.242    0.809 
+daywed       -0.09985   16.37030  -0.006    0.995 
+daythu       13.76162   16.31770   0.843    0.400 
+dayfri       -5.41363   17.27270  -0.313    0.754 
+daysat       -1.52349   15.56506  -0.098    0.922 
+daysun       -5.37842   15.10671  -0.356    0.722 
+FFMC         -0.56195    1.24961  -0.450    0.653 
+DMC           0.18276    0.11625   1.572    0.117 
+DC           -0.07934    0.06845  -1.159    0.248 
+ISI          -0.13264    0.94416  -0.140    0.888 
+temp          1.22916    1.30629   0.941    0.348 
+RH           -0.04826    0.40585  -0.119    0.905 
+wind          3.25583    2.39894   1.357    0.176 
+rain         -3.81054    9.28137  -0.411    0.682 
+ 
+Residual standard error: 57.54 on 214 degrees of freedom 
+Multiple R-squared:  0.05832,   Adjusted R-squared:  -0.02089  
+F-statistic: 0.7363 on 18 and 214 DF,  p-value: 0.7714 
+```
+
+```{r}
+fit2 <- glm(iffire~.,data = forestfires[forestfires$season == "summer",-15],family = binomial())
+summary(fit2)
+
+Call: glm(formula = iffire ~ ., family = binomial(), data = forestfires[forestfires$seaso n ==      "summer", -15]) 
+ 
+Deviance Residuals:
+         Min          1Q      Median          3Q         Max   
+         -1.114e-03  -2.000e-08   2.000e-08   2.000e-08   1.394e-03   
+ 
+Coefficients:
+               Estimate Std. Error z value Pr(>|z|)
+ (Intercept) -1.710e+01  1.875e+04  -0.001    0.999 
+ X            4.353e+00  6.691e+02   0.007    0.995 
+ Y           -3.088e+00  1.032e+03  -0.003    0.998 
+ monthjul     7.085e+01  6.425e+03   0.011    0.991 
+ monthaug     2.507e+01  8.292e+03   0.003    0.998 
+ daytue       2.227e+01  4.410e+03   0.005    0.996 
+ daywed       1.947e+01  4.093e+03   0.005    0.996 
+ daythu      -5.211e+01  1.232e+04  -0.004    0.997 
+ dayfri      -1.380e+01  8.129e+03  -0.002    0.999 
+ daysat      -1.919e-01  6.152e+03   0.000    1.000 
+ daysun       2.421e+01  4.962e+03   0.005    0.996 
+ FFMC        -1.997e+00  1.846e+02  -0.011    0.991 
+ DMC          1.664e-02  1.770e+01   0.001    0.999 
+ DC           1.658e-01  1.557e+01   0.011    0.992 
+ ISI          2.159e+00  1.019e+02   0.021    0.983 
+ temp        -5.449e-01  1.945e+02  -0.003    0.998 
+ RH          -3.412e-01  9.135e+01  -0.004    0.997 
+ wind         3.889e+00  8.115e+02   0.005    0.996 
+ rain        -8.257e+01  4.558e+04  -0.002    0.999 
+ area         1.438e+02  2.788e+03   0.052    0.959 
+ 
+(Dispersion parameter for binomial family taken to be 1) 
+ 
+    Null deviance: 3.2177e+02  on 232  degrees of freedom 
+    Residual deviance: 1.0996e-05  on 213  degrees of freedom 
+    AIC: 40 
+ 
+Number of Fisher Scoring iterations: 25 
+```
+
+由上面fit1的结果可以看出,对于着火次数最多的夏季,以着火面积为被解释变量，多元线性回归模型结果都很不显著，$R^2$太小，系数的显著性检验都不能通过，F检验无法拒绝在原假设即所有解释变量联合起来对被解释变量没有显著性影响。
+
+换一个模型再次尝试，从上面fit2的结果可以看出，对于夏季，以是否着火为被解释变量，逻辑回归结果系数均不显著。
+
+由于建立回归模型的目的比起预测更侧重于拟合与解释，而且回归的拟合效果极差，就不进一步使用交叉验证法验证正确率了。
+
+#### 3.火灾高发的原因
+
+由于无法在回归分析中得到火灾高发的原因，我们只能通过上面的散点图去估计，可以看出，干燥指数DC增多时，火灾发生次数和面积会增多;温度较高时，火灾发生的次数和面积也较多。
+
+### 四、整理得到的结论，并查阅资料检查所得结论是否正确。
+
+ * 结论一： 夏季是火灾高发季节。
+ * 干燥指数越高、温度越高，火灾发生的概率越大，发生的面积越大。
+ 
+查阅资料发现，森林火灾的发生与高温、连续干旱、大风有密切关系，与我观察散点图得出来的结论大体相符，而葡萄牙为地中海气候，夏季炎热干燥，冬季低温湿润，与夏季为火灾高发季节相符。
+
+### 五、自己找一个问题进行分析
+
+#### 1.尝试因子分析
+
+```{r}
+forestfires.fa <- factanal(forestfires[ ,5:12], 3)
+forestfires.fa
+
+Call: factanal(x = forestfires[, 5:12], factors = 3) 
+ 
+Uniquenesses:
+  FFMC   DMC    DC   ISI  temp    RH  wind  rain  
+  0.584 0.283 0.338 0.005 0.344 0.005 0.910 0.979  
+ 
+Loadings:
+      Factor1 Factor2 Factor3 
+FFMC  0.576   0.270  -0.103  
+DMC   0.321   0.731   0.281  
+DC    0.266   0.755   0.148  
+ISI   0.983           0.150  
+temp  0.492   0.554  -0.328  
+RH   -0.289  -0.136   0.945  
+wind         -0.284          
+rain                  0.127  
+ 
+               Factor1 Factor2 Factor3 
+SS loadings      1.808   1.591   1.154 
+Proportion Var   0.226   0.199   0.144 
+Cumulative Var   0.226   0.425   0.569 
+ 
+Test of the hypothesis that 3 factors are sufficient. 
+The chi square statistic is 40.03 on 7 degrees of freedom. 
+The p-value is 1.24e-06  
+```
+由上面的结果可以看出，如果提取前3个因子，三个因子中，载荷大于0.5的变量分别是FFMC可燃物引燃温度
+和ISI主要可燃物数量、DMC duff moisture code和DC和干燥指数和temp温度和RH湿度。
+
+则因子一、二、三分别可以概括为可燃物因子、干燥因子、相对湿度因子。
+
+该因子分析的结果中累计贡献率为0.569，三个因子中解释的原变量方差中的0.569，该因子分析效果一般，其实也可以从上一步的因子解释有所重叠中看出。
+
+#### 2.绘制感兴趣的图
+
+##### 1)气泡图
+绘制气泡图，图中的x轴和y轴分别表示葡萄牙公园里的地理坐标，圈的大小表示火灾发生的面积，由于symbols函数在绘制图像时，以circle为半径，所以对原数据中的area取开方以更真实地表示面积。
+
+```{r}
+symbols(forestfires$X, forestfires$Y, sqrt(forestfires$area),fg="grey")
+```
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200423105458515.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NTUyOTgzNw==,size_16,color_FFFFFF,t_70)
+
+##### 2)散点图
+
+```{r}
+library(scatterplot3d)
+scatterplot3d(x=forestfires$X, y=forestfires$Y, z=forestfires$area, highlight.3d = T, type = "h", pch = 3)
+```
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200423105553507.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NTUyOTgzNw==,size_16,color_FFFFFF,t_70)
+
+观察上面的两幅图，可以看出，Y地理坐标为4时，最常发生火灾，Y坐标为2、8和10时，火灾发生次数较少；大面积的火灾倾向与发生在X的取值为6和8的情况下。
